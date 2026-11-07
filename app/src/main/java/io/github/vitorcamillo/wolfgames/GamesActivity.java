@@ -55,7 +55,7 @@ public class GamesActivity extends Activity {
     private List<String> hostUuids=new ArrayList<>();
     private String pickedName,pickedUuid;
     private float density;
-    private boolean destroyed,busy,syncing,reloadPending;
+    private boolean destroyed,busy,syncing,reloadPending,started;
     private long loadedStamp=Long.MIN_VALUE;
     private int selected;
     private String activeGameId;
@@ -73,6 +73,7 @@ public class GamesActivity extends Activity {
 
     @Override protected void onStart() {
         super.onStart();
+        started=true;
         Provisioning.accept(this);
         if(!moonlightInstalled()) {
             loadedStamp=Long.MIN_VALUE;
@@ -88,6 +89,7 @@ public class GamesActivity extends Activity {
 
     @Override protected void onStop() {
         super.onStop();
+        started=false;
         if(sessionMenu!=null)sessionMenu.pause();
     }
 
@@ -333,7 +335,7 @@ public class GamesActivity extends Activity {
             @Override public void sessionState(WolfSession session) {showActiveGame(session);}
         });
         if(isFinishing() || destroyed)return;
-        sessionMenu.resume();
+        if(started)sessionMenu.resume(); // Loading can finish while stopped: resuming here would mark the session as refreshed and skip the update on the next onStart.
         cards.get(selected).post(()-> {if(!destroyed)cards.get(selected).requestFocus();});
     }
 
@@ -396,7 +398,7 @@ public class GamesActivity extends Activity {
     private boolean hasGameCatalog() {return catalog!=null && catalog.hostUuid.equals(pickedUuid);}
 
     private void focusGames() {
-        if(!cards.isEmpty() && hasGameCatalog()) {cards.get(selected).requestFocusFromTouch();return;}
+        if(!cards.isEmpty()) {cards.get(selected).requestFocusFromTouch();return;} // Any picked host can play the shelf; the fallback below would trap focus on the selector.
         if(pcChoice!=null && pcChoice.getVisibility()==View.VISIBLE)pcChoice.requestFocusFromTouch();
     }
 
