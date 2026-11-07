@@ -355,6 +355,7 @@ public class GamesActivity extends Activity {
                     pickedUuid=hostUuids.get(which);pickedName=hostNames.get(which);
                     getSharedPreferences(PREFS,0).edit().putString("host_uuid",pickedUuid).apply();
                     pcChoice.setText("PC: "+pickedName+" ▾");
+                    if(started && sessionMenu!=null && hasGameCatalog())sessionMenu.resume(); // onStart skips it while another PC is picked.
                     dialog.dismiss();
                 }).setNeutralButton("Gerenciar no Moonlight",(dialog,which)->openMoonlight())
                 .setNegativeButton("Cancelar",null).show();
