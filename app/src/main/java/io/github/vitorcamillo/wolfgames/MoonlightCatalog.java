@@ -45,7 +45,7 @@ final class MoonlightCatalog {
             throw new IllegalArgumentException("Invalid host UUID");
         }
         hostUuid = UUID.fromString(uuid).toString();
-        if (entries == null || entries.isEmpty() || entries.size() > MAX_GAMES) throw new IllegalArgumentException("Invalid game count");
+        if (entries == null || entries.size() > MAX_GAMES) throw new IllegalArgumentException("Invalid game count");
         Set<String> names = new HashSet<>();
         Set<String> ids = new HashSet<>();
         for (Game game : entries) {

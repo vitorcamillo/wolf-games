@@ -42,7 +42,7 @@ public class MoonlightCatalogTest {
     }
     @Test public void enforcesCountAndUniqueness() {
         assertThrows(IllegalArgumentException.class,()->new MoonlightCatalog("Wolf",UUID,null));
-        assertThrows(IllegalArgumentException.class,()->new MoonlightCatalog("Wolf",UUID,Collections.emptyList()));
+        assertEquals(0,new MoonlightCatalog("Wolf",UUID,Collections.emptyList()).games.size());
         List<MoonlightCatalog.Game> list=new ArrayList<>();
         for(int i=0;i<64;i++)list.add(game("Game "+i,""+(i+1),null));
         assertEquals(64,new MoonlightCatalog("Wolf",UUID,list).games.size());

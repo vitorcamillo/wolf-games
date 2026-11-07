@@ -56,6 +56,7 @@ public class GamesActivity extends Activity {
     private String pickedName,pickedUuid;
     private float density;
     private boolean destroyed,busy,syncing,reloadPending,started;
+    private boolean preserveStatusOnStart;
     private long loadedStamp=Long.MIN_VALUE;
     private int selected;
     private String activeGameId;
@@ -81,7 +82,7 @@ public class GamesActivity extends Activity {
             showStatus("O Moonlight não está instalado. Instale o Moonlight na TV; o Wolf Games volta para a tela inicial quando a TV reiniciar.");
             return;
         }
-        hideStatus();
+        if(shouldHideStatusOnStart(preserveStatusOnStart))hideStatus();
         if(!busy)load();
         maybeSync();
         if(sessionMenu!=null && hasGameCatalog())sessionMenu.resume();
@@ -199,7 +200,7 @@ public class GamesActivity extends Activity {
                 if(destroyed) {recycle(images);return;}
                 loadedStamp=stamp;
                 if(ready==null) {recycle(images);showFallback();}
-                else {clearShelf();catalog=ready;hostNames=names;hostUuids=uuids;bitmaps.addAll(images);buildShelf();}
+                else {preserveStatusOnStart=false;clearShelf();catalog=ready;hostNames=names;hostUuids=uuids;bitmaps.addAll(images);buildShelf();}
                 if(reloadPending) {reloadPending=false;loadedStamp=Long.MIN_VALUE;load();} // A cover changed under a load in flight: reload once.
             });
         });
@@ -260,6 +261,18 @@ public class GamesActivity extends Activity {
     }
 
     private void buildShelf() {
+        if(catalog.games.isEmpty()) {
+            MoonlightCatalog emptyCatalog=catalog;
+            clearShelf();
+            catalog=emptyCatalog;
+            pcChoice.setText("PC: "+pickedHostName()+" ▾");
+            pcChoice.setVisibility(hostNames.size()>1?View.VISIBLE:View.GONE);
+            status.setText("Nenhum jogo disponível neste PC.");
+            status.setVisibility(View.VISIBLE);
+            scroll.setVisibility(View.GONE);
+            preserveStatusOnStart=true;
+            return;
+        }
         status.setVisibility(View.GONE);
         scroll.setVisibility(View.VISIBLE);
         String saved=getSharedPreferences(PREFS,0).getString("game_name","");
@@ -437,6 +450,7 @@ public class GamesActivity extends Activity {
     /** Minimal screen when Moonlight is installed but no valid catalog is available. */
     private void showFallback() {
         clearShelf();
+        preserveStatusOnStart=true;
         status.setVisibility(View.VISIBLE);
         status.setText("Nenhum catálogo de jogos encontrado. Gere o catálogo no Moonlight e envie os arquivos com adb push (veja o README do Wolf Games).");
         scroll.setVisibility(View.GONE);
@@ -451,7 +465,10 @@ public class GamesActivity extends Activity {
 
     private void hideStatus() {
         status.setVisibility(View.GONE);
+        preserveStatusOnStart=false;
     }
+
+    static boolean shouldHideStatusOnStart(boolean preservingStatus) {return !preservingStatus;}
 
     private void clearShelf() {
         if(sessionMenu!=null) {sessionMenu.close();sessionMenu=null;}

@@ -56,6 +56,11 @@ public class WolfCatalogSyncTest {
             parsed.add(new MoonlightCatalog.Game(game.getString("name"), game.optString("app_id", null), game.optString("image", null)));
         }
         assertEquals(1, new MoonlightCatalog(data.getString("host_name"), data.getString("host_uuid"), parsed).games.size());
+        fake.entries.clear();
+        assertTrue(WolfCatalogSync.sync(fake, dir));
+        assertEquals(0, json(dir).getJSONArray("games").length());
+        assertFalse(new File(dir, "wolf-111111112222-1.png").exists());
+        assertFalse(WolfCatalogSync.sync(fake, dir));
     }
     @Test public void preservesHostsAndDropsDuplicateNamesAndBadCovers() throws Exception {
         File dir = folder.newFolder();Fake fake = new Fake();
