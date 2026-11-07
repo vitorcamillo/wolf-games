@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <!-- The optional Wolf session controller only: HTTPS to one LAN IPv4 address, port 47991,
+         with a pinned certificate. Catalog and covers are read from files; nothing else. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Only to show Wolf Games again after Moonlight is installed, at the next boot. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Android 11+ hides other apps; the shelf only needs to see Moonlight. -->
+    <queries><package android:name="com.limelight" /></queries>
+
+    <application
+        android:allowBackup="false"
+        android:banner="@drawable/banner"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+        android:usesCleartextTraffic="false">
+
+        <activity
+            android:name=".GamesActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="com.gathin.tvhome.category.DOCK_CARD" />
+            </intent-filter>
+            <meta-data android:name="com.gathin.tvhome.card" android:resource="@xml/module_card" />
+        </activity>
+
+        <!-- Protected system broadcasts; the receiver still checks the action and the package. -->
+        <receiver android:name=".MoonlightGate" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_FULLY_REMOVED" />
+                <action android:name="android.intent.action.PACKAGE_ADDED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
