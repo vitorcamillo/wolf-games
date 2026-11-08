@@ -145,6 +145,7 @@ public class GamesActivity extends Activity {
         row=new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setClipChildren(false);
+        row.setClipToPadding(false); // the focused tile grows 10% past the 5dp padding; without this its top and left get cut.
         row.setPadding(dp(5),dp(5),dp(5),dp(5));
         scroll.addView(row,new ViewGroup.LayoutParams(-2,-1));
         FrameLayout.LayoutParams scrollParams=new FrameLayout.LayoutParams(-1,-1,Gravity.TOP);
