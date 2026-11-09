@@ -388,7 +388,7 @@ final class BoxShelfView extends View implements BoxInspect.Host {
     private void openInspect() {
         if (selIdx < 0) return;
         Item it = items.get(selIdx);
-        inspect.open(it.cover, tintOf(it), it.name, it.game == running);
+        inspect.open(frontBitmap(it), tintOf(it), it.name, it.game == running);
         makeSnapshot();
         invalidate();
     }

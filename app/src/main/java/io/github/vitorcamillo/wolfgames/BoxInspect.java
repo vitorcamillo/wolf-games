@@ -280,7 +280,10 @@ final class BoxInspect {
         }
         drawLabels(canvas, w0, h0);
 
-        if (animate) host.invalidateInspect(); // transição, giro e balanço pedem o próximo quadro
+        boolean idleSway = !busy && now - lastKeyMs > IDLE_MS;
+        if (animate && (busy || fade.busy(now) || state == DISC_OUT || idleSway)) {
+            host.invalidateInspect(); // transição, giro e balanço pedem o próximo quadro
+        }
     }
 
     /** Libera tudo sem avisar o host. Idempotente. */
@@ -517,6 +520,10 @@ final class BoxInspect {
     }
 
     private void setCropSource() {
+        if (cover == null || cover.isRecycled()) {
+            setRect(cropSrc, 1, 1);
+            return;
+        }
         float sw = cover.getWidth(), sh = cover.getHeight();
         float cw = sw, ch = sh, l = 0f, t = 0f;
         if (sw / sh > FRONT_ASPECT) {

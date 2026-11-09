@@ -69,6 +69,7 @@ public class GamesActivity extends Activity {
         @Override public void launch(int game) {main.post(()-> {if(destroyed)return;if(box!=null)box.closeInspect();open(game);});}
         @Override public void selected(int game) {
             selected=game;
+            if(game>=0 && game<cards.size())cards.get(game).requestFocus();
             if(catalog!=null && game>=0 && game<catalog.games.size())
                 getSharedPreferences(PREFS,0).edit().putString("game_name",catalog.games.get(game).name).apply();
         }

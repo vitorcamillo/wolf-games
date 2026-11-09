@@ -1,0 +1,1 @@
+- a50d162: alem da prateleira 3D, altera as mensagens de erro de conexao em WolfSessionMenu (config_error/unauthorized/tls_error passam a compartilhar o texto de validacao de conexao; network_error/upstream_unavailable, o texto de PC sem resposta)
