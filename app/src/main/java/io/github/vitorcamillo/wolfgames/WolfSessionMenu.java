@@ -164,8 +164,8 @@ final class WolfSessionMenu {
             case "session_changed":message="O jogo em andamento mudou. Consulte novamente antes de encerrar.";break;
             case "busy":message="O jogo ainda está iniciando ou encerrando. Aguarde e tente novamente.";break;
             case "stop_timeout":message="O jogo ainda não terminou de encerrar. O próximo jogo não foi aberto.";break;
-            case "config_error":case "unauthorized":case "tls_error":message="Não foi possível validar o controle do Wolf. A configuração precisa ser conferida.";break;
-            case "network_error":case "upstream_unavailable":message="O controle do Wolf está indisponível. Confira se o PC está ligado e tente novamente.";break;
+            case "config_error":case "unauthorized":case "tls_error":message="Não foi possível validar a conexão do Wolf Games com o PC. A configuração precisa ser conferida.";break;
+            case "network_error":case "upstream_unavailable":message="O PC não respondeu ao Wolf Games. Confira se ele está ligado e conectado à rede e tente novamente.";break;
             default:message="Não foi possível confirmar o estado do jogo. Nenhuma troca foi iniciada.";
         }
         dismiss();AlertDialog.Builder builder=new AlertDialog.Builder(activity).setTitle("Não foi possível concluir")

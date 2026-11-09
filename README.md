@@ -11,9 +11,15 @@ covers, OK launches a game, and with the optional Wolf session controller you ca
 switch games without leaving the TV. Declares a module card ("Wolf Games", caption "Stream from
 your PC") for the CleanYourTV launcher.
 
-The visual: dark screen, one row of 3:4 covers with rounded corners, focus zoom and a soft white
-outline, the game name over a dark gradient on the focused cover, and a "PC: host" pill on top when
-the catalog lists more than one host.
+The visual: a 3D shelf of game boxes. The selected box faces you, the others fan out to the sides
+showing their covers and spines, with a soft halo and a floor reflection. OK opens the box in place:
+up opens the case, up again takes the disc out and spins it, left and right turn the box over,
+X zooms, and OK inside the box plays. Spines, backs and disc labels are generated from the single
+cover in the catalog.
+
+The shelf's look (perspective, angles, timing and proportions) follows
+[Boxshelf](https://github.com/sassiestrhihno/boxshelf-beta), GPL-3.0, used as a visual reference.
+No Boxshelf code is included here.
 
 ## What it does
 

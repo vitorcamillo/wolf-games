@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -62,6 +63,28 @@ public class GamesActivity extends Activity {
     private String activeGameId;
     private File directory;
     private View activePlay;
+    private BoxShelfView box;
+    private int lastTint;
+    private final BoxShelfView.Listener boxListener=new BoxShelfView.Listener() {
+        @Override public void launch(int game) {main.post(()-> {if(destroyed)return;if(box!=null)box.closeInspect();open(game);});}
+        @Override public void selected(int game) {
+            selected=game;
+            if(catalog!=null && game>=0 && game<catalog.games.size())
+                getSharedPreferences(PREFS,0).edit().putString("game_name",catalog.games.get(game).name).apply();
+        }
+        @Override public void exitDown() {}
+        @Override public void exitUp() {if(pcChoice!=null && pcChoice.getVisibility()==View.VISIBLE)pcChoice.requestFocusFromTouch();}
+        @Override public void reorder(int game) {}
+        @Override public void tint(int color) {
+            int escuro=0xff000000
+                    |((int)(((color>>16)&0xff)*0.35f)<<16)
+                    |((int)(((color>>8)&0xff)*0.35f)<<8)
+                    |(int)((color&0xff)*0.35f);
+            if(escuro==lastTint)return;
+            lastTint=escuro;
+            if(root!=null)root.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{escuro,0xff101216}));
+        }
+    };
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -151,6 +174,15 @@ public class GamesActivity extends Activity {
         FrameLayout.LayoutParams scrollParams=new FrameLayout.LayoutParams(-1,-1,Gravity.TOP);
         scrollParams.topMargin=dp(84);
         root.addView(scroll,scrollParams);
+        scroll.setAlpha(0f);
+    }
+
+    @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        if(box!=null && box.getVisibility()==View.VISIBLE && cards.contains(getCurrentFocus())) {
+            if(event.getKeyCode()==KeyEvent.KEYCODE_BACK && !box.inspecting())return super.dispatchKeyEvent(event);
+            if(box.dispatch(event))return true;
+        }
+        return super.dispatchKeyEvent(event);
     }
 
     /** Reads and validates the catalog from the external directory the owner fills with adb push. */
@@ -327,7 +359,8 @@ public class GamesActivity extends Activity {
                     selected=index;
                     getSharedPreferences(PREFS,0).edit().putString("game_name",game.name).apply();
                     scroll.smoothScrollTo(Math.max(0,tile.getLeft()-dp(8)),0);
-                }
+                    if(box!=null) {box.select(index);box.setKeyboardActive(true);}
+                } else card.post(()-> {if(box!=null && !cards.contains(getCurrentFocus()))box.setKeyboardActive(false);});
             });
             card.setOnClickListener(v->open(index));
             card.setOnKeyListener((v,key,event)-> {
@@ -348,6 +381,14 @@ public class GamesActivity extends Activity {
             @Override public void focusShelf() {focusGames();}
             @Override public void sessionState(WolfSession session) {showActiveGame(session);}
         });
+        box=new BoxShelfView(this,boxListener,Settings.Global.getFloat(getContentResolver(),Settings.Global.ANIMATOR_DURATION_SCALE,1f)>0f);
+        List<BoxShelfView.Item> items=new ArrayList<>();
+        for(int i=0;i<catalog.games.size();i++)items.add(new BoxShelfView.Item(i,catalog.games.get(i).name,bitmaps.get(i)));
+        box.setItems(items,selected);
+        box.setHost(pickedName);
+        FrameLayout.LayoutParams boxParams=new FrameLayout.LayoutParams(-1,-1,Gravity.TOP);
+        boxParams.topMargin=dp(84);
+        root.addView(box,boxParams);
         if(isFinishing() || destroyed)return;
         if(started)sessionMenu.resume(); // Loading can finish while stopped: resuming here would mark the session as refreshed and skip the update on the next onStart.
         cards.get(selected).post(()-> {if(!destroyed)cards.get(selected).requestFocus();});
@@ -369,6 +410,7 @@ public class GamesActivity extends Activity {
                     pickedUuid=hostUuids.get(which);pickedName=hostNames.get(which);
                     getSharedPreferences(PREFS,0).edit().putString("host_uuid",pickedUuid).apply();
                     pcChoice.setText("PC: "+pickedName+" ▾");
+                    if(box!=null)box.setHost(pickedName);
                     if(started && sessionMenu!=null && hasGameCatalog())sessionMenu.resume(); // onStart skips it while another PC is picked.
                     dialog.dismiss();
                 }).setNeutralButton("Gerenciar no Moonlight",(dialog,which)->openMoonlight())
@@ -425,6 +467,7 @@ public class GamesActivity extends Activity {
         activePlay=null;
         int active=-1;
         if(activeGameId!=null)for(int i=0;i<cards.size();i++)if(activeGameId.equals(catalog.games.get(i).appId)) {active=i;break;}
+        if(box!=null)box.setRunning(active);
         for(int i=0;i<cards.size();i++) {
             View tile=(View)cards.get(i).getParent();
             boolean on=i==active;
@@ -462,6 +505,7 @@ public class GamesActivity extends Activity {
         status.setVisibility(View.VISIBLE);
         status.setText(message);
         scroll.setVisibility(View.GONE);
+        if(box!=null)box.setVisibility(View.GONE);
     }
 
     private void hideStatus() {
@@ -472,6 +516,7 @@ public class GamesActivity extends Activity {
     static boolean shouldHideStatusOnStart(boolean preservingStatus) {return !preservingStatus;}
 
     private void clearShelf() {
+        if(box!=null) {box.release();root.removeView(box);box=null;}
         if(sessionMenu!=null) {sessionMenu.close();sessionMenu=null;}
         if(activePlay!=null && activePlay.getParent() instanceof ViewGroup)((ViewGroup)activePlay.getParent()).removeView(activePlay);
         activePlay=null;
