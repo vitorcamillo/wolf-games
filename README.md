@@ -26,7 +26,8 @@ No Boxshelf code is included here.
 - Reads a `catalog.json` plus cover files that you push to the add-on's own external directory and
   shows them as one row of covers.
 - OK on a game launches it through Moonlight (`com.limelight/.ShortcutTrampoline`, extras
-  `Name`/`UUID`/`AppName`, plus `AppId` when the launch went through the session menu).
+  `Name`/`UUID`/`AppName`, plus `AppId` when the launch went through the session menu). Moonlight V+
+  (`com.limelight.qiin`) works the same way and is preferred when both are installed.
 - With a provisioned Wolf session controller, OK first asks the Wolf what is running: resume the
   game, close it, or close it and open another one. Every close is confirmed and revision-checked;
   nothing is ever stopped implicitly.

@@ -12,7 +12,10 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Android 11+ hides other apps; the shelf only needs to see Moonlight. -->
-    <queries><package android:name="com.limelight" /></queries>
+    <queries>
+        <package android:name="com.limelight" />
+        <package android:name="com.limelight.qiin" />
+    </queries>
 
     <application
         android:allowBackup="false"

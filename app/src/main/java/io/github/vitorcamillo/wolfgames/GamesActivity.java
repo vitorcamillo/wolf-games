@@ -425,19 +425,25 @@ public class GamesActivity extends Activity {
         boolean controlled=sessionMenu!=null && pickedUuid!=null && pickedUuid.equals(catalog.hostUuid)
                 && new File(getFilesDir(),"wolf-control.json").isFile();
         if(controlled && game.appId!=null) {sessionMenu.open(game.appId,game.name);return;}
-        start(new Intent(Intent.ACTION_VIEW).setClassName(MOONLIGHT,MOONLIGHT+".ShortcutTrampoline")
+        start(moonlightIntent(Intent.ACTION_VIEW,".ShortcutTrampoline")
                 .putExtra("Name",pickedName).putExtra("UUID",pickedUuid).putExtra("AppName",game.name));
     }
 
     private void launchControlled(String id,String name) {
         if(destroyed || catalog==null)return;
-        start(new Intent(Intent.ACTION_VIEW).setClassName(MOONLIGHT,MOONLIGHT+".ShortcutTrampoline")
+        start(moonlightIntent(Intent.ACTION_VIEW,".ShortcutTrampoline")
                 .putExtra("Name",catalog.hostName).putExtra("UUID",catalog.hostUuid)
                 .putExtra("AppName",name).putExtra("AppId",id));
     }
 
     private void openMoonlight() {
-        start(new Intent(Intent.ACTION_MAIN).setClassName(MOONLIGHT,MOONLIGHT+".PcView"));
+        start(moonlightIntent(Intent.ACTION_MAIN,".PcView"));
+    }
+
+    /** The fork keeps upstream's class names, so only the package changes. */
+    private Intent moonlightIntent(String action,String cls) {
+        String pkg=MoonlightGate.moonlightPackage(this);
+        return new Intent(action).setClassName(pkg!=null?pkg:MOONLIGHT,MOONLIGHT+cls);
     }
 
     private void start(Intent intent) {
@@ -448,10 +454,7 @@ public class GamesActivity extends Activity {
         }
     }
 
-    private boolean moonlightInstalled() {
-        try {return getPackageManager().getPackageInfo(MOONLIGHT,0)!=null;}
-        catch(Exception ignored) {return false;}
-    }
+    private boolean moonlightInstalled() {return MoonlightGate.moonlightInstalled(this);}
 
     private boolean hasGameCatalog() {return catalog!=null && catalog.hostUuid.equals(pickedUuid);}
 

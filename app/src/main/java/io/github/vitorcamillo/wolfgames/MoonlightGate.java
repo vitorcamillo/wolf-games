@@ -14,6 +14,22 @@ import android.content.pm.PackageManager;
  */
 public final class MoonlightGate extends BroadcastReceiver {
     static final String MOONLIGHT="com.limelight";
+    /** Moonlight V+ is a fork under its own package with the same activities; it wins when both are installed. */
+    static final String[] PACKAGES={"com.limelight.qiin",MOONLIGHT};
+
+    static boolean isMoonlight(String pkg) {
+        for(String known:PACKAGES)if(known.equals(pkg))return true;
+        return false;
+    }
+
+    /** The installed Moonlight's package, or null when there is none. */
+    static String moonlightPackage(Context c) {
+        for(String pkg:PACKAGES) {
+            try {if(c.getPackageManager().getPackageInfo(pkg,0)!=null)return pkg;}
+            catch(Exception ignored) { /* Not installed: try the next one. */ }
+        }
+        return null;
+    }
 
     /** Pure: DEFAULT (manifest, i.e. enabled) when Moonlight is there, DISABLED otherwise. */
     static int targetState(boolean moonlightInstalled) {
@@ -22,10 +38,7 @@ public final class MoonlightGate extends BroadcastReceiver {
                 :PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
     }
 
-    static boolean moonlightInstalled(Context c) {
-        try {return c.getPackageManager().getPackageInfo(MOONLIGHT,0)!=null;}
-        catch(Exception ignored) {return false;}
-    }
+    static boolean moonlightInstalled(Context c) {return moonlightPackage(c)!=null;}
 
     /** Applies the target state to GamesActivity, only when it differs; exceptions are swallowed. */
     static void sync(Context c) {
@@ -42,7 +55,7 @@ public final class MoonlightGate extends BroadcastReceiver {
         String action=intent.getAction();
         boolean moonlightEvent=(Intent.ACTION_PACKAGE_FULLY_REMOVED.equals(action)
                 ||Intent.ACTION_PACKAGE_ADDED.equals(action))
-                &&MOONLIGHT.equals(intent.getData()!=null?intent.getData().getSchemeSpecificPart():null);
+                &&isMoonlight(intent.getData()!=null?intent.getData().getSchemeSpecificPart():null);
         if(!Intent.ACTION_BOOT_COMPLETED.equals(action)
                 &&!Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)
                 &&!moonlightEvent)return;

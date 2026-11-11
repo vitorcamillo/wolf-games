@@ -9,4 +9,12 @@ public class MoonlightGateTest {
         assertEquals(PackageManager.COMPONENT_ENABLED_STATE_DEFAULT,MoonlightGate.targetState(true));
         assertEquals(PackageManager.COMPONENT_ENABLED_STATE_DISABLED,MoonlightGate.targetState(false));
     }
+
+    @Test public void knowsMoonlightAndItsVPlusFork() {
+        org.junit.Assert.assertTrue(MoonlightGate.isMoonlight("com.limelight"));
+        org.junit.Assert.assertTrue(MoonlightGate.isMoonlight("com.limelight.qiin"));
+        org.junit.Assert.assertFalse(MoonlightGate.isMoonlight("com.limelight.other"));
+        org.junit.Assert.assertFalse(MoonlightGate.isMoonlight(null));
+        assertEquals("com.limelight.qiin",MoonlightGate.PACKAGES[0]); // V+ wins when both are installed
+    }
 }
