@@ -1,5 +1,7 @@
 # Wolf Games
 
+![MIT](https://img.shields.io/badge/license-MIT-green) ![Android TV](https://img.shields.io/badge/Android%20TV-Google%20TV-3DDC84?logo=android&logoColor=white) ![Moonlight](https://img.shields.io/badge/Moonlight-compatible-5865F2)
+
 An add-on for the [CleanYourTV](https://github.com/Gathin23/cleanyourtv) launcher: it appears
 there as a module card, and it can also open on its own from any Android TV / Google TV launcher.
 It is listed in the CleanYourTV SHOWCASE.
