@@ -106,8 +106,12 @@ module card.
 
 ## Build and install
 
-From the repository root (JDK 17, Android SDK 34). Build it yourself from a tag or commit you have
-read: there are no prebuilt APKs (the release APK is signed with the debug key, for sideload).
+**Download:** get `wolf-games-0.1.0.apk` from the
+[latest release](https://github.com/vitorcamillo/wolf-games/releases/latest) and install it with
+`adb install -r wolf-games-0.1.0.apk`. The APK is signed with the Android debug key, for sideload only;
+check its SHA-256 against the release notes.
+
+**Build from source** from the repository root (JDK 17, Android SDK 34), from a tag or commit you have read:
 
 ```bash
 ./gradlew --no-daemon testReleaseUnitTest lintRelease assembleRelease
