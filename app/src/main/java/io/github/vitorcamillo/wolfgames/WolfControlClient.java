@@ -3,6 +3,8 @@ package io.github.vitorcamillo.wolfgames;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,30 +28,56 @@ import javax.net.ssl.TrustManagerFactory;
 /** HTTPS client for an owner-provisioned, certificate-pinned, LAN-only session controller. */
 final class WolfControlClient implements WolfControl {
     private static final int MAX_BYTES=16384;
-    private final String baseUrl,hostUuid,token;
+    private final List<String> bases;
+    private volatile int current;
+    private final String hostUuid,token;
     private final SSLSocketFactory ssl;
+    static volatile String lastGoodHost;
     static final class ControlException extends Exception {
         final String code;
         ControlException(String code) { super(code);this.code=code; }
     }
     // Package-private so the JVM tests can point the client at a local fixture port.
     WolfControlClient(String url,String host,String token,SSLSocketFactory ssl) {
-        baseUrl=url;hostUuid=host;this.token=token;this.ssl=ssl;
+        String base=url.endsWith("/")?url.substring(0,url.length()-1):url;
+        this.bases=new ArrayList<>(Collections.singletonList(base));this.current=0;hostUuid=host;this.token=token;this.ssl=ssl;
+    }
+    WolfControlClient(List<String> bases,String host,String token,SSLSocketFactory ssl) {
+        this.bases=new ArrayList<>(bases);this.current=0;hostUuid=host;this.token=token;this.ssl=ssl;
     }
     static WolfControlClient load(File file) throws ControlException {
+        return load(file,Collections.emptyList());
+    }
+    static WolfControlClient load(File file,List<String> discovered) throws ControlException {
         if(!file.exists())return null;
         try {
             if(!file.isFile() || file.length()>MAX_BYTES)throw new ControlException("config_error");
             JSONObject json;
             try(InputStream input=new FileInputStream(file)) {json=new JSONObject(read(input));}
             if(json.getInt("version")!=1)throw new ControlException("config_error");
-            String address=json.getString("url"),host=json.getString("host_uuid"),token=json.getString("token");
+            String host=json.getString("host_uuid"),token=json.getString("token");
             SSLSocketFactory ssl=trust(json.getString("server_certificate"));
-            URL url=new URL(address);
-            if(!"https".equals(url.getProtocol()) || url.getPort()!=47991 || url.getUserInfo()!=null || url.getQuery()!=null || url.getRef()!=null
-                    || !(url.getPath().isEmpty() || "/".equals(url.getPath())) || !privateAddress(url.getHost()))throw new ControlException("config_error");
+            String urlHost=null;
+            if(json.has("url") && !json.isNull("url")) {
+                String address=json.getString("url");
+                URL url=new URL(address);
+                if(!"https".equals(url.getProtocol()) || url.getPort()!=47991 || url.getUserInfo()!=null || url.getQuery()!=null || url.getRef()!=null
+                        || !(url.getPath().isEmpty() || "/".equals(url.getPath())) || !privateAddress(url.getHost()))throw new ControlException("config_error");
+                urlHost=url.getHost();
+            }
             if(!host.matches("[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}") || !token.matches("[A-Za-z0-9_-]{32,128}"))throw new ControlException("config_error");
-            return new WolfControlClient(address.endsWith("/")?address.substring(0,address.length()-1):address,UUID.fromString(host).toString(),token,ssl);
+            LinkedHashSet<String> candidates=new LinkedHashSet<>();
+            String last=lastGoodHost;
+            if(last!=null && !last.isEmpty() && candidates.size()<6)candidates.add(last);
+            if(discovered!=null)for(String item:discovered) {
+                if(candidates.size()>=6)break;
+                if(item!=null && privateAddress(item))candidates.add(item);
+            }
+            if(urlHost!=null && candidates.size()<6)candidates.add(urlHost);
+            if(candidates.isEmpty())throw new ControlException("config_error");
+            List<String> bases=new ArrayList<>();
+            for(String candidate:candidates)bases.add("https://"+candidate+":47991");
+            return new WolfControlClient(bases,UUID.fromString(host).toString(),token,ssl);
         } catch(ControlException error) {throw error;}
         catch(Exception error) {throw new ControlException("config_error");}
     }
@@ -65,13 +93,26 @@ final class WolfControlClient implements WolfControl {
         return tls.getSocketFactory();
     }
     private static boolean privateAddress(String host) {
-        if(!host.matches("[0-9]{1,3}(\\.[0-9]{1,3}){3}"))return false;
+        if(host==null || !host.matches("[0-9]{1,3}(\\.[0-9]{1,3}){3}"))return false;
         String[] pieces=host.split("\\.");int[] octets=new int[4];
         for(int i=0;i<4;i++){octets[i]=Integer.parseInt(pieces[i]);if(octets[i]>255 || !pieces[i].equals(String.valueOf(octets[i])))return false;}
         return octets[0]==10 || octets[0]==192&&octets[1]==168 || octets[0]==172&&octets[1]>=16&&octets[1]<=31;
     }
     boolean controls(String host) {return hostUuid.equalsIgnoreCase(host);}
-    public WolfSession getSession() throws ControlException {return request("GET","/v1/session",null);}
+    public WolfSession getSession() throws ControlException {
+        ControlException last=null;
+        int start=current;
+        for(int i=0;i<bases.size();i++) {
+            int index=(start+i)%bases.size();
+            String base=bases.get(index);
+            try {
+                WolfSession session=requestOnce("GET","/v1/session",null,base);
+                current=index;String resolved=hostOf(base);if(resolved!=null)lastGoodHost=resolved;
+                return session;
+            } catch(ControlException error) {if(!retriable(error))throw error;last=error;}
+        }
+        throw last!=null?last:new ControlException("network_error");
+    }
     public WolfSession stop(WolfSession expected) throws ControlException {
         if(expected==null || !expected.active)throw new ControlException("invalid_request");
         try {
@@ -83,9 +124,21 @@ final class WolfControlClient implements WolfControl {
         catch(Exception error) {throw new ControlException("protocol_error");}
     }
     String hostUuid() {return hostUuid;}
+    private static boolean retriable(ControlException error) {
+        return "network_error".equals(error.code) || "tls_error".equals(error.code);
+    }
+    private static String hostOf(String base) {
+        try {return new URL(base).getHost();} catch(Exception ignored) {return null;}
+    }
     private HttpsURLConnection open(String method,String path) throws java.io.IOException {
-        HttpsURLConnection connection=(HttpsURLConnection)new URL(baseUrl+path).openConnection();
+        return open(method,path,bases.get(current));
+    }
+    private HttpsURLConnection open(String method,String path,String base) throws java.io.IOException {
+        HttpsURLConnection connection=(HttpsURLConnection)new URL(base+path).openConnection();
         connection.setSSLSocketFactory(ssl);
+        // The address comes from mDNS discovery, so the name is not checked: trust is the pinned certificate
+        // (the trust store holds only the provisioned one) plus the host_uuid checked on every response.
+        connection.setHostnameVerifier((hostname,session)->true);
         connection.setConnectTimeout(2000);connection.setReadTimeout(8000);connection.setUseCaches(false);connection.setInstanceFollowRedirects(false);
         connection.setRequestMethod(method);connection.setRequestProperty("Authorization","Bearer "+token);connection.setRequestProperty("Accept","application/json");
         return connection;
@@ -103,9 +156,23 @@ final class WolfControlClient implements WolfControl {
         throw new ControlException("protocol_error");
     }
     List<WolfCatalogSync.Entry> games() throws ControlException {
+        ControlException last=null;
+        int start=current;
+        for(int i=0;i<bases.size();i++) {
+            int index=(start+i)%bases.size();
+            String base=bases.get(index);
+            try {
+                List<WolfCatalogSync.Entry> result=gamesOnce(base);
+                current=index;String resolved=hostOf(base);if(resolved!=null)lastGoodHost=resolved;
+                return result;
+            } catch(ControlException error) {if(!retriable(error))throw error;last=error;}
+        }
+        throw last!=null?last:new ControlException("network_error");
+    }
+    private List<WolfCatalogSync.Entry> gamesOnce(String base) throws ControlException {
         HttpsURLConnection connection=null;
         try {
-            connection=open("GET","/v1/games");int status=connection.getResponseCode();
+            connection=open("GET","/v1/games",base);int status=connection.getResponseCode();
             if(status!=200)checkStatus(connection,status);
             String type=connection.getContentType();
             if(type==null || !"application/json".equalsIgnoreCase(type.split(";",2)[0].trim()))throw new ControlException("protocol_error");
@@ -133,9 +200,23 @@ final class WolfControlClient implements WolfControl {
         finally {if(connection!=null)connection.disconnect();}
     }
     byte[] cover(String appId) throws ControlException {
+        ControlException last=null;
+        int start=current;
+        for(int i=0;i<bases.size();i++) {
+            int index=(start+i)%bases.size();
+            String base=bases.get(index);
+            try {
+                byte[] result=coverOnce(appId,base);
+                current=index;String resolved=hostOf(base);if(resolved!=null)lastGoodHost=resolved;
+                return result;
+            } catch(ControlException error) {if(!retriable(error))throw error;last=error;}
+        }
+        throw last!=null?last:new ControlException("network_error");
+    }
+    private byte[] coverOnce(String appId,String base) throws ControlException {
         HttpsURLConnection connection=null;
         try {
-            WolfSession.validateId(appId);connection=open("GET","/v1/games/"+appId+"/cover");int status=connection.getResponseCode();
+            WolfSession.validateId(appId);connection=open("GET","/v1/games/"+appId+"/cover",base);int status=connection.getResponseCode();
             if(status==404)throw new ControlException("not_found");
             if(status!=200)checkStatus(connection,status);
             String type=connection.getContentType();if(type==null)throw new ControlException("protocol_error");
@@ -155,9 +236,12 @@ final class WolfControlClient implements WolfControl {
         return bytes.toByteArray();
     }
     private WolfSession request(String method,String path,JSONObject body) throws ControlException {
+        return requestOnce(method,path,body,bases.get(current));
+    }
+    private WolfSession requestOnce(String method,String path,JSONObject body,String base) throws ControlException {
         HttpsURLConnection connection=null;
         try {
-            connection=open(method,path);
+            connection=open(method,path,base);
             if(body!=null) {
                 byte[] bytes=body.toString().getBytes(StandardCharsets.UTF_8);connection.setDoOutput(true);
                 connection.setRequestProperty("Content-Type","application/json");connection.setFixedLengthStreamingMode(bytes.length);

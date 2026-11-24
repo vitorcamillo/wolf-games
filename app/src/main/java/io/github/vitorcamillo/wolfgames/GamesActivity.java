@@ -274,7 +274,7 @@ public class GamesActivity extends Activity {
         syncer.execute(()-> {
             boolean changed=false;
             try {
-                WolfControlClient client=WolfControlClient.load(new File(getFilesDir(),"wolf-control.json"));
+                WolfControlClient client=WolfControlClient.load(new File(getFilesDir(),"wolf-control.json"),WolfDiscovery.addresses(this,1500));
                 if(client!=null && (directory.isDirectory() || directory.mkdirs()))
                     changed=WolfCatalogSync.sync(adapter(client),directory,SystemClock.uptimeMillis()+20000,SystemClock::uptimeMillis);
             } catch(Exception e) {android.util.Log.w("WolfGames","Catalog sync failed, keeping the current catalog",e);}

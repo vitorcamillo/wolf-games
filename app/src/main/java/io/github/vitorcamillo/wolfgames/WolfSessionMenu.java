@@ -31,7 +31,7 @@ final class WolfSessionMenu {
     WolfSessionMenu(Activity activity,String hostUuid,Listener listener) {
         this(activity,listener,()-> {
             // No wolf-control.json: no session control, so Moonlight launches directly.
-            WolfControlClient control=WolfControlClient.load(new File(activity.getFilesDir(),"wolf-control.json"));
+            WolfControlClient control=WolfControlClient.load(new File(activity.getFilesDir(),"wolf-control.json"),WolfDiscovery.addresses(activity,1500));
             if(control==null)throw new WolfControlClient.ControlException("config_error");
             if(!control.controls(hostUuid))throw new WolfControlClient.ControlException("config_error");
             return control;

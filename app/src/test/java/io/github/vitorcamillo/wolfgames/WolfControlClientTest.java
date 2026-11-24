@@ -156,4 +156,35 @@ public class WolfControlClientTest {
     @Test public void disconnectedServiceHasExplicitNetworkFailure() throws Exception {
         server.close();serverExecutor.shutdownNow();assertEquals("network_error",assertThrows(WolfControlClient.ControlException.class,()->client.getSession()).code);
     }
+    @Test public void configWithoutUrlLoadsWithDiscoveredPrivate() throws Exception {
+        WolfControlClient.lastGoodHost=null;
+        JSONObject value=config();value.remove("url");write(value);
+        WolfControlClient loaded=WolfControlClient.load(configFile,java.util.Arrays.asList("192.168.1.20"));
+        assertNotNull(loaded);assertTrue(loaded.controls(HOST));
+    }
+    @Test public void configWithoutUrlAndEmptyDiscoveredFails() throws Exception {
+        WolfControlClient.lastGoodHost=null;
+        JSONObject value=config();value.remove("url");write(value);
+        assertEquals("config_error",assertThrows(WolfControlClient.ControlException.class,()->WolfControlClient.load(configFile,java.util.Collections.emptyList())).code);
+    }
+    @Test public void discoveredPublicAddressIsIgnored() throws Exception {
+        WolfControlClient.lastGoodHost=null;
+        JSONObject value=config();value.remove("url");write(value);
+        assertEquals("config_error",assertThrows(WolfControlClient.ControlException.class,()->WolfControlClient.load(configFile,java.util.Arrays.asList("8.8.8.8"))).code);
+        write(config());
+        assertNotNull(WolfControlClient.load(configFile,java.util.Arrays.asList("8.8.8.8")));
+    }
+    @Test public void failoverUsesSecondBase() throws Exception {
+        WolfControlClient.lastGoodHost=null;
+        body=state(false);
+        int closed;try(java.net.ServerSocket probe=new java.net.ServerSocket(0)){closed=probe.getLocalPort();}
+        String bad="https://127.0.0.1:"+closed,good="https://127.0.0.1:"+server.getLocalPort();
+        WolfControlClient failover=new WolfControlClient(java.util.Arrays.asList(bad,good),HOST,TOKEN,WolfControlClient.trust(config().getString("server_certificate")));
+        assertFalse(failover.getSession().active);
+    }
+    @Test public void certificateAcceptedWhenHostnameNotInSan() throws Exception {
+        body=state(false);
+        WolfControlClient byName=new WolfControlClient("https://localhost:"+server.getLocalPort(),HOST,TOKEN,WolfControlClient.trust(config().getString("server_certificate")));
+        assertFalse(byName.getSession().active);
+    }
 }
