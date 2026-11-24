@@ -66,9 +66,12 @@ adb push catalog.json /sdcard/Android/data/io.github.vitorcamillo.wolfgames/file
 adb push 123.png /sdcard/Android/data/io.github.vitorcamillo.wolfgames/files/moonlight/123.png
 ```
 
-Optional Wolf session controller: push `wolf-control.json` (version 1, an `https://` URL on LAN port
-47991, the Wolf's `host_uuid`, the token, and the server certificate as base64 DER) to the add-on's
-external directory:
+Optional Wolf session controller: push `wolf-control.json` (version 1, the Wolf's `host_uuid`, the
+token, and the server certificate as base64 DER) to the add-on's external directory. There is no
+address to set: the PC announces the controller on the LAN by mDNS (`_wolf-control._tcp`, port 47991,
+for example an Avahi service file) and the add-on finds it on whatever IP the PC has, so the same file
+keeps working when the IP changes or on another PC with the same certificate and token. An optional
+`url` (`https://<private IPv4>:47991`) is still accepted as a fallback when discovery finds nothing.
 
 ```bash
 adb push wolf-control.json /sdcard/Android/data/io.github.vitorcamillo.wolfgames/files/wolf-control.json
@@ -92,9 +95,10 @@ in the repository's issues.
 
 ## Permissions
 
-- `INTERNET` — used only by the optional Wolf session controller: HTTPS to a single private IPv4
-  address (10/8, 172.16/12 or 192.168/16), port 47991 only, with a pinned certificate and a bearer
-  token, plus the catalog/cover refresh through the same connection. No other host is ever
+- `INTERNET` — used only by the optional Wolf session controller: mDNS discovery of
+  `_wolf-control._tcp` on the LAN, then HTTPS to private IPv4 addresses only (10/8, 172.16/12 or
+  192.168/16), port 47991 only, with a pinned certificate (the address is not checked against it, the
+  certificate and the `host_uuid` in every answer are) and a bearer token, plus the catalog/cover refresh through the same connection. No other host is ever
   contacted. There is no telemetry, no ads, no analytics, no background service, no polling: the
   screen reads data when it opens or resumes, and nothing runs behind it.
 - `RECEIVE_BOOT_COMPLETED` (start at boot) — a receiver that, on boot, only checks whether Moonlight
@@ -106,9 +110,9 @@ module card.
 
 ## Build and install
 
-**Download:** get `wolf-games-0.1.0.apk` from the
+**Download:** get `wolf-games-0.2.0.apk` from the
 [latest release](https://github.com/vitorcamillo/wolf-games/releases/latest) and install it with
-`adb install -r wolf-games-0.1.0.apk`. The APK is signed with the Android debug key, for sideload only;
+`adb install -r wolf-games-0.2.0.apk`. The APK is signed with the Android debug key, for sideload only;
 check its SHA-256 against the release notes.
 
 **Build from source** from the repository root (JDK 17, Android SDK 34), from a tag or commit you have read:
