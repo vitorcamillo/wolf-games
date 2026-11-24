@@ -162,15 +162,16 @@ public class WolfControlClientTest {
         WolfControlClient loaded=WolfControlClient.load(configFile,java.util.Arrays.asList("192.168.1.20"));
         assertNotNull(loaded);assertTrue(loaded.controls(HOST));
     }
-    @Test public void configWithoutUrlAndEmptyDiscoveredFails() throws Exception {
+    @Test public void configWithoutUrlLoadsBeforeDiscovery() throws Exception {
         WolfControlClient.lastGoodHost=null;
         JSONObject value=config();value.remove("url");write(value);
-        assertEquals("config_error",assertThrows(WolfControlClient.ControlException.class,()->WolfControlClient.load(configFile,java.util.Collections.emptyList())).code);
+        WolfControlClient loaded=WolfControlClient.load(configFile,java.util.Collections.emptyList());assertNotNull(loaded);
+        assertEquals("network_error",assertThrows(WolfControlClient.ControlException.class,loaded::getSession).code);
     }
     @Test public void discoveredPublicAddressIsIgnored() throws Exception {
         WolfControlClient.lastGoodHost=null;
         JSONObject value=config();value.remove("url");write(value);
-        assertEquals("config_error",assertThrows(WolfControlClient.ControlException.class,()->WolfControlClient.load(configFile,java.util.Arrays.asList("8.8.8.8"))).code);
+        assertEquals("network_error",assertThrows(WolfControlClient.ControlException.class,WolfControlClient.load(configFile,java.util.Arrays.asList("8.8.8.8"))::getSession).code);
         write(config());
         assertNotNull(WolfControlClient.load(configFile,java.util.Arrays.asList("8.8.8.8")));
     }

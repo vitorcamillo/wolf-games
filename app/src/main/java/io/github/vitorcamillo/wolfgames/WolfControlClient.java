@@ -74,7 +74,7 @@ final class WolfControlClient implements WolfControl {
                 if(item!=null && privateAddress(item))candidates.add(item);
             }
             if(urlHost!=null && candidates.size()<6)candidates.add(urlHost);
-            if(candidates.isEmpty())throw new ControlException("config_error");
+            // No address yet is valid: provisioning validates before any discovery; requests then fail with network_error.
             List<String> bases=new ArrayList<>();
             for(String candidate:candidates)bases.add("https://"+candidate+":47991");
             return new WolfControlClient(bases,UUID.fromString(host).toString(),token,ssl);
