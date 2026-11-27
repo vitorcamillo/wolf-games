@@ -22,6 +22,7 @@ Wolf Games is an add-on for the [CleanYourTV](https://github.com/Gathin23/cleany
 - [Permissions](#permissions)
 - [Tested on](#tested-on)
 - [Limitations and responsible use](#limitations-and-responsible-use)
+- [How it works](#how-it-works)
 - [Credits](#credits)
 - [License](#license)
 

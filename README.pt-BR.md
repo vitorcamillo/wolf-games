@@ -22,6 +22,7 @@ Wolf Games é um complemento do inicializador [CleanYourTV](https://github.com/G
 - [Permissões](#permissões)
 - [Testado em](#testado-em)
 - [Limitações e uso responsável](#limitações-e-uso-responsável)
+- [Como funciona](#como-funciona)
 - [Créditos](#créditos)
 - [Licença](#licença)
 
