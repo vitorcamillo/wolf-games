@@ -2,7 +2,7 @@
 
 **English** · [Português](README.pt-BR.md)
 
-![MIT](https://img.shields.io/badge/license-MIT-green) ![Android TV](https://img.shields.io/badge/Android%20TV-Google%20TV-3DDC84?logo=android&logoColor=white) ![Moonlight](https://img.shields.io/badge/Moonlight-compatible-5865F2)
+[![CI](https://github.com/vitorcamillo/wolf-games/actions/workflows/ci.yml/badge.svg)](https://github.com/vitorcamillo/wolf-games/actions/workflows/ci.yml) ![MIT](https://img.shields.io/badge/license-MIT-green) ![Android TV](https://img.shields.io/badge/Android%20TV-Google%20TV-3DDC84?logo=android&logoColor=white) ![Moonlight](https://img.shields.io/badge/Moonlight-compatible-5865F2)
 
 Wolf Games is an add-on for the [CleanYourTV](https://github.com/Gathin23/cleanyourtv) launcher that shows the games shared from a PC through Moonlight as a row of covers on Android TV / Google TV. It is for players who stream PC games to the TV and want to launch, resume, close, or switch games without leaving the couch. Each cover renders as a 3D game box whose spines, backs, and disc labels are generated from the single cover image.
 
